@@ -2,11 +2,12 @@
 {
     internal class Program
     {
-        static void Main()
+        static void Check()
         {
-            var alphabet = new List<string>();
-            var states = new Dictionary<string, string[]>();
+            string alphabet = "";
+            var states = new Dictionary<(string, string), string[]>();
 
+            // Проверка входных данных.
             Console.Write("Введите количество строк с описанием Машины Тьюринга: ");
             int m = int.Parse(Console.ReadLine());
 
@@ -21,12 +22,21 @@
             {
                 var s = Console.ReadLine();
                 var ss = s.Split(' ');
+                
+                try
+                {
+                    if (!alphabet.Contains(ss[1])) alphabet += ss[1];
+                    if (!alphabet.Contains(ss[4])) alphabet += ss[4];
 
 
-                alphabet.Add(ss[1]);
-                alphabet.Add(ss[4]);
-
-                states.Add(ss[0], new string[] { ss[1], ss[2], ss[3], ss[4], ss[5] });
+                    states.Add((ss[0], ss[1].ToString()), new string[] { ss[3], ss[4], ss[5]});
+                }
+                catch (IndexOutOfRangeException) 
+                { 
+                    Console.WriteLine("Некорректно введённая строка. Попробуйте снова.");
+                    return;
+                }
+                
 
             }
 
@@ -44,21 +54,57 @@
                     throw new Exception("Алфавит не содержит данных, указанных в строке.");
 
             data += new string(del, n - data.Length);
-            alphabet = alphabet.Distinct().ToList();
+            var arr_data = data.Select(x => x.ToString()).ToArray();
 
             Console.Write("Введите начальное состояние: ");
             string start_st = Console.ReadLine();
+            if (!states.Keys.Select(x => x.Item1).Contains(start_st))
+                throw new Exception("Начадьное состояние не было указано в описании программы.");
 
             Console.Write("Введите конечное состояние: ");
             string last_st = Console.ReadLine();
 
-            string[] check_st = { "Начальное состояние отсутсвует в словаре состояний.",
-                                  "Конечное состояние отсутсвтует в словаре состояний.",
-                                  start_st, last_st};
+            // Проверка входных данных окончена.
 
-            for (var i = 0; i < 2; i++)
-                if (!states.Keys.Contains(check_st[3 - i]))
-                    throw new Exception(check_st[i]);
+            int idx = 0;
+            int iteration = 0;
+            var max_iters = n * states.Keys.Select(x => x.Item1).Distinct().Count() * Math.Pow(alphabet.Length, n);
+
+            Console.WriteLine();
+
+            while (true)
+            {
+                if (start_st == last_st)
+                {
+                    Console.WriteLine("OK");
+                    return;
+                }    
+                    
+
+                if (states.TryGetValue((start_st, arr_data[idx]), out string[] val))
+                    (arr_data[idx], start_st, idx) = (val[1], val[0], int.Parse(val[2]));
+                else
+                {
+                    Console.WriteLine($"Вы не указали вариант, когда состояние {start_st} встречает символ {arr_data[idx]}.\nПопробуйте снова.");
+                    return;
+                }
+
+                if (idx < 0) idx = arr_data.Length - 1;
+                if (idx == arr_data.Length) idx = 0;
+
+                iteration++;
+
+                if (iteration == max_iters)
+                {
+                    Console.WriteLine("Not OK");
+                    return;
+                }
+            }
+        }
+
+        static void Main()
+        {
+            Check();
         }
     }
 }
